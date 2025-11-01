@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/ivandersr/go-blockchain/blockchain"
+	"github.com/ivandersr/go-blockchain/wallet"
 )
 
 func init() {
@@ -12,23 +13,32 @@ func init() {
 }
 
 func main() {
-	blockchainAddress := "blockchain_address_X"
-	bc := blockchain.NewBlockchain(blockchainAddress)
-	bc.Print()
+	minersWallet := wallet.NewWallet()
+	walletA := wallet.NewWallet()
+	walletB := wallet.NewWallet()
 
-	bc.AddTransaction("a", "b", 1.0)
+	// wallet side
+	t := wallet.NewTransaction(
+		walletA.PrivateKey(),
+		walletA.PublicKey(),
+		walletA.BlockchainAddress(),
+		walletB.BlockchainAddress(),
+		1.0,
+	)
+
+	// blockchain side
+	bc := blockchain.NewBlockchain(minersWallet.BlockchainAddress())
+	isAdded := bc.AddTransaction(
+		walletA.BlockchainAddress(),
+		walletB.BlockchainAddress(),
+		1.0, walletA.PublicKey(),
+		t.GenerateSignature())
+	fmt.Printf("Added? %v\n", isAdded)
 
 	bc.Mine()
 	bc.Print()
 
-	bc.AddTransaction("x", "y", 2.0)
-	bc.AddTransaction("c", "d", 3.0)
-
-	bc.Mine()
-	bc.Print()
-
-	fmt.Printf("C %.2f\n", bc.CalculateTotalAmount("c"))
-	fmt.Printf("D %.2f\n", bc.CalculateTotalAmount("d"))
-	fmt.Printf("X %.2f\n", bc.CalculateTotalAmount("x"))
-	fmt.Printf("Y %.2f\n", bc.CalculateTotalAmount("y"))
+	fmt.Printf("A %.2f\n", bc.CalculateTotalAmount(walletA.BlockchainAddress()))
+	fmt.Printf("B %.2f\n", bc.CalculateTotalAmount(walletB.BlockchainAddress()))
+	fmt.Printf("Miner %.2f\n", bc.CalculateTotalAmount(minersWallet.BlockchainAddress()))
 }
